@@ -1,11 +1,11 @@
-use std::thread;
-use std::time::Duration;
 use ocl::ProQue;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::{MouseButton, MouseWheelDirection};
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::surface::Surface;
+use std::thread;
+use std::time::Duration;
 
 const SIZE: usize = 2000;
 const TICK_DURATION: Duration = Duration::new(0, 1_000_000_000u32 / 60);
@@ -86,7 +86,8 @@ fn create_pro_que() -> ProQue {
 fn calculate_values(pro_que: &ProQue, pos_x: f32, pos_y: f32, width: f32) -> Vec<u8> {
     let buffer = pro_que.create_buffer::<u8>().unwrap();
 
-    let kernel = pro_que.kernel_builder("mandelbrot")
+    let kernel = pro_que
+        .kernel_builder("mandelbrot")
         .arg(&buffer)
         .arg(SIZE as u32)
         .arg(pos_x)
@@ -96,7 +97,9 @@ fn calculate_values(pro_que: &ProQue, pos_x: f32, pos_y: f32, width: f32) -> Vec
         .build()
         .unwrap();
 
-    unsafe { kernel.enq().unwrap(); }
+    unsafe {
+        kernel.enq().unwrap();
+    }
 
     let mut result = vec![0; buffer.len()];
     buffer.read(&mut result).enq().unwrap();
@@ -107,12 +110,14 @@ fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let window = video_subsystem.window("Mandelbrot", SIZE as u32, SIZE as u32)
+    let window = video_subsystem
+        .window("Mandelbrot", SIZE as u32, SIZE as u32)
         .position_centered()
         .build()
         .expect("could not initialize video subsystem");
 
-    let mut canvas = window.into_canvas()
+    let mut canvas = window
+        .into_canvas()
         .build()
         .expect("could not make a canvas");
 
@@ -148,17 +153,22 @@ fn main() {
             SIZE as u32,
             (SIZE * 3) as u32,
             PixelFormatEnum::RGB24,
-        ).unwrap()
-            .as_texture(&creator)
-            .unwrap();
+        )
+        .unwrap()
+        .as_texture(&creator)
+        .unwrap();
         canvas.copy(&texture, None, None).unwrap();
 
         scale *= 1.01;
 
-        let mut mouse_motion = None;
+        let mut mouse_motion = (0, 0);
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. } | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => {
                     break 'running;
                 }
                 Event::MouseWheel { y, .. } => {
@@ -169,7 +179,8 @@ fn main() {
                     }
                 }
                 Event::MouseMotion { xrel, yrel, .. } => {
-                    mouse_motion = Some((xrel, yrel));
+                    mouse_motion.0 += xrel;
+                    mouse_motion.1 += yrel;
                 }
                 _ => {}
             }
@@ -178,10 +189,8 @@ fn main() {
         let mouse_state = event_pump.mouse_state();
 
         if mouse_state.is_mouse_button_pressed(MouseButton::Left) {
-            if let Some((dy, dx)) = mouse_motion {
-                center_x -= 10.0 * width * (dx as f32) / (SIZE as f32);
-                center_y -= 10.0 * width * (dy as f32) / (SIZE as f32);
-            }
+            center_x -= width * (mouse_motion.1 as f32) / (SIZE as f32);
+            center_y -= width * (mouse_motion.0 as f32) / (SIZE as f32);
         }
 
         canvas.present();
