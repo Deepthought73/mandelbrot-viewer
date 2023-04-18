@@ -3,8 +3,9 @@ name = "mandelbrot"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 ocl = "0.19.3"
 sdl2 = "0.35.2"
+rug = "1.19.2"
+image = "0.24.6"
+rayon = "1.7.0"
